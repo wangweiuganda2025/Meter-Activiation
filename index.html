@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Excel数据网页展示与查询</title>
+    <!-- 引入SheetJS库 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <style>
+        /* 简单美化页面样式 */
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .search-bar {
+            margin: 20px 0;
+        }
+        #searchInput {
+            padding: 8px;
+            width: 300px;
+            margin-right: 10px;
+        }
+        #searchBtn {
+            padding: 8px 20px;
+            cursor: pointer;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Shaanxi Water Metering Activation Codes Automatic Inquiry System</h1>
+        <!-- 文件上传控件 -->
+        <input type="file" id="excelFile" accept=".xlsx, .xls" />
+        <!-- 查询区域 -->
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="输入关键词查询..." />
+            <button id="searchBtn">查询</button>
+        </div>
+        <!-- 数据展示容器 -->
+        <div id="dataContainer"></div>
+    </div>
+
+    <script>
+        let excelJsonData = []; // 存储解析后的Excel JSON数据
+        const fileInput = document.getElementById('excelFile');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const dataContainer = document.getElementById('dataContainer');
+
+        // 监听Excel文件上传事件
+        fileInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // 验证文件类型
+            if (!/\.(xls|xlsx)$/i.test(file.name)) {
+                alert('请上传Excel格式的文件（.xls或.xlsx）');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                // 解析Excel文件
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                // 获取第一个工作表
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                // 转换为JSON数据（header:1 表示以第一行为表头）
+                excelJsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                // 渲染表格
+                renderTable(excelJsonData);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // 监听查询按钮点击事件
+        searchBtn.addEventListener('click', doSearch);
+        // 支持回车查询
+        searchInput.addEventListener('keyup', function (e) {
+            if (e.key === 'Enter') doSearch();
+        });
+
+        /**
+         * 渲染表格到页面
+         * @param {Array} data 要展示的二维数组数据
+         */
+        function renderTable(data) {
+            if (!data || data.length === 0) {
+                dataContainer.innerHTML = '<p>暂无数据</p>';
+                return;
+            }
+            // 构建HTML表格
+            let html = '<table>';
+            // 渲染表头
+            html += '<thead><tr>';
+            data[0].forEach(thText => {
+                html += `<th>${thText}</th>`;
+            });
+            html += '</tr></thead>';
+            // 渲染表体数据
+            html += '<tbody>';
+            for (let i = 1; i < data.length; i++) {
+                html += '<tr>';
+                data[i].forEach(tdText => {
+                    html += `<td>${tdText || ''}</td>`;
+                });
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            dataContainer.innerHTML = html;
+        }
+
+        /**
+         * 执行查询逻辑
+         */
+        function doSearch() {
+            const keyword = searchInput.value.trim().toLowerCase();
+            if (!excelJsonData.length) {
+                alert('请先上传Excel文件');
+                return;
+            }
+            // 无关键词时显示全部数据
+            if (!keyword) {
+                renderTable(excelJsonData);
+                return;
+            }
+            // 筛选包含关键词的数据
+            const filteredData = excelJsonData.filter(row => {
+                return row.some(cell => {
+                    return cell && cell.toString().toLowerCase().includes(keyword);
+                });
+            });
+            // 渲染筛选后的表格
+            renderTable(filteredData);
+        }
+    </script>
+</body>
+</html>
